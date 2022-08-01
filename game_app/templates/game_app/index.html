@@ -1,0 +1,19 @@
+<header>
+	<nav>
+		<h1>Game App</h1>
+		<form action="logout" method="POST">
+			<button type="submit">Log Out</button>
+		</form>
+	</nav>
+</header>
+<form action="" method="post">
+	{% csrf_token %}
+	<fieldset>
+		<legend><h1>Enter Hero name</h1></legend>
+		<label for="name">Name</label>
+		<br>
+		<input type="text" name="name" id="name" value="">
+		{% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
+	</fieldset>
+	<input type="submit" value="Create">
+</form>
