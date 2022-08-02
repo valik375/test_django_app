@@ -2,15 +2,18 @@ from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.models import User
 
+from .game_assets.hero.hero_class import Hero
+from .game_assets.weapon.weapons import Axe, Sword
+
 from .forms import RegistrationForm, LoginForm
 from .models import Game
 
 
 def index(request):
-    if request.method == 'POST' and request.POST.get('name'):
+    if request.method == 'POST':
         game = Game()
         game.user_name = request.POST.get('name')
-        game.status = True
+        game.in_progress = True
         game.save()
         return redirect(f'/game_app/{game.pk}')
     else:
@@ -47,4 +50,21 @@ def user_login(request):
 
 def play(request, game_id):
     game = get_object_or_404(Game, pk=game_id)
-    return render(request, 'game_app/play.html', {'game': game})
+    axe = Axe('Axe', 14, 20)
+    hero = Hero(request.user, axe)
+    attack_name = ''
+    damage = ''
+    info_message = ''
+    for key in request.GET.keys():
+        if key == 'damage':
+            damage = request.GET.getlist(key)[0]
+        elif key == 'name':
+            attack_name = request.GET.getlist(key)[0]
+        else:
+            attack_id = request.GET.getlist(key)[0]
+        info_message = f'Damaged by {attack_name} --- {damage} DMG '
+    return render(request, 'game_app/play.html', {
+        'game': game,
+        'info_message': info_message,
+        'hero': hero
+    })
