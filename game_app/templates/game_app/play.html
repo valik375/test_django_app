@@ -1,10 +1,11 @@
 <h1>This is session of {{ game.user_name }}</h1>
 
 <br>
-{{info_message}}
+{% for message in info_message %}
+<p>{{ message }}</p>
+{% endfor %}
 <br>
-<br>
-{{hero.name}}
+
 <br>
 {% for attack in hero.attacks %}
 	<a href="?attack={{ attack.id }}&damage={{ attack.damage }}&name={{ attack.name }}" class="attack-button">{{ attack.name }}</a>

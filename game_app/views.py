@@ -2,8 +2,13 @@ from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.models import User
 
-from .game_assets.hero.hero_class import Hero
-from .game_assets.weapon.weapons import Axe, Sword
+from .game_assets.hero_class import Hero
+from .game_assets.weapons import Axe, Sword
+from .game_assets.enemy import Monster
+from .game_assets.dishes import Chicken, Bread
+from .game_assets.shop import Shop
+
+from random import randint
 
 from .forms import RegistrationForm, LoginForm
 from .models import Game
@@ -48,13 +53,29 @@ def user_login(request):
         return render(request, 'game_app/login.html', {'user_login_form': user_login_form})
 
 
+axe = Axe('Axe', 20, 15)
+sword = Sword('Sword', 13, 10)
+super_axe = Axe('Super Axe', 25, 35)
+super_sword = Sword('Super Sword', 19, 22)
+
+weapon_array = [dict(index=1, item=axe), dict(index=2, item=sword),
+                dict(index=3, item=super_axe), dict(index=4, item=super_sword)]
+info_message = []
+
+
 def play(request, game_id):
     game = get_object_or_404(Game, pk=game_id)
-    axe = Axe('Axe', 14, 20)
     hero = Hero(request.user, axe)
     attack_name = ''
     damage = ''
-    info_message = ''
+
+    oleg_dialogs = ['На тобi КУРВА!', 'Отримуй!', 'Джета топ!', 'Получай!']
+    oleg_crip = Monster(f'Oleg level: 1', 1, oleg_dialogs)
+
+    info_message.append('--------------------------------------------')
+    info_message.append(f'{oleg_crip.name} HP: {oleg_crip.hit_points}')
+    info_message.append(f'{hero.name} HP: {hero.hit_points}')
+
     for key in request.GET.keys():
         if key == 'damage':
             damage = request.GET.getlist(key)[0]
@@ -62,7 +83,19 @@ def play(request, game_id):
             attack_name = request.GET.getlist(key)[0]
         else:
             attack_id = request.GET.getlist(key)[0]
-        info_message = f'Damaged by {attack_name} --- {damage} DMG '
+
+    info_message.append(f'Damaged by {attack_name} --- {damage} DMG')
+    if oleg_crip.hit_points == 0:
+        hero.set_experience(oleg_crip.experience)
+        hero.money += oleg_crip.money
+    else:
+        info_message.append(f'{oleg_crip.dialogs[int(randint(0, 3))]}')
+        if hero.hit_points <= oleg_crip.damage:
+            info_message.append('You Die')
+        else:
+            hero.change_hip_points(oleg_crip.damage)
+
+    info_message.append('--------------------------------------------')
     return render(request, 'game_app/play.html', {
         'game': game,
         'info_message': info_message,
