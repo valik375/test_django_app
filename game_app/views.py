@@ -2,24 +2,26 @@ from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.models import User
 
-from .game_assets.hero_class import Hero
-from .game_assets.weapons import Axe, Sword
-from .game_assets.enemy import Monster
-from .game_assets.dishes import Chicken, Bread
-from .game_assets.shop import Shop
-
 from random import randint
 
 from .forms import RegistrationForm, LoginForm
-from .models import Game
+from .models import Game, Weapon, Hero, Monster
 
 
 def index(request):
     if request.method == 'POST':
         game = Game()
-        game.user_name = request.POST.get('name')
-        game.in_progress = True
+        game.game_name = request.POST.get('name')
+        game.game_logs = {"info_message": []}
         game.save()
+        hero = Hero(health=100, level=1)
+        hero.game = game
+        hero.save()
+        default_weapon = Weapon.objects.first()
+        hero.weapon.add(default_weapon)
+        monster = Monster(name='Oleg', health=60, level=1)
+        monster.game = game
+        monster.save()
         return redirect(f'/game_app/{game.pk}')
     else:
         return render(request, 'game_app/index.html', {
@@ -53,51 +55,44 @@ def user_login(request):
         return render(request, 'game_app/login.html', {'user_login_form': user_login_form})
 
 
-axe = Axe('Axe', 20, 15)
-sword = Sword('Sword', 13, 10)
-super_axe = Axe('Super Axe', 25, 35)
-super_sword = Sword('Super Sword', 19, 22)
-
-weapon_array = [dict(index=1, item=axe), dict(index=2, item=sword),
-                dict(index=3, item=super_axe), dict(index=4, item=super_sword)]
-info_message = []
-
-
 def play(request, game_id):
     game = get_object_or_404(Game, pk=game_id)
-    hero = Hero(request.user, axe)
-    attack_name = ''
-    damage = ''
-
-    oleg_dialogs = ['На тобi КУРВА!', 'Отримуй!', 'Джета топ!', 'Получай!']
-    oleg_crip = Monster(f'Oleg level: 1', 1, oleg_dialogs)
-
+    info = game.game_logs
+    info_message = info["info_message"]
+    hero = game.hero.get()
+    monster = game.monster.get()
+    monster_dialogs = ['На тобi КУРВА!', 'Отримуй!', 'Джета топ!', 'Получай!']
     info_message.append('--------------------------------------------')
-    info_message.append(f'{oleg_crip.name} HP: {oleg_crip.hit_points}')
-    info_message.append(f'{hero.name} HP: {hero.hit_points}')
-
-    for key in request.GET.keys():
-        if key == 'damage':
-            damage = request.GET.getlist(key)[0]
-        elif key == 'name':
-            attack_name = request.GET.getlist(key)[0]
-        else:
-            attack_id = request.GET.getlist(key)[0]
-
-    info_message.append(f'Damaged by {attack_name} --- {damage} DMG')
-    if oleg_crip.hit_points == 0:
-        hero.set_experience(oleg_crip.experience)
-        hero.money += oleg_crip.money
-    else:
-        info_message.append(f'{oleg_crip.dialogs[int(randint(0, 3))]}')
-        if hero.hit_points <= oleg_crip.damage:
-            info_message.append('You Die')
-        else:
-            hero.change_hip_points(oleg_crip.damage)
-
+    info_message.append(f'{monster.name} HP: {monster.health}')
+    info_message.append(f'{request.user} HP: {hero.health}')
     info_message.append('--------------------------------------------')
+    if request.GET.get('damage'):
+        hero_damage = int(request.GET.get('damage'))
+        monster_damage = monster.level * 10
+        info_message.append(f'{request.user}: hit ({hero_damage} DMG)')
+
+        if monster.health == 0:
+            hero.level = hero.level + 1
+            hero.health = 100 * hero.level
+            monster.level = monster.level + 1
+            monster.health = 50 * monster.level
+        else:
+            monster.health = monster.health - hero_damage
+            info_message.append(f'{monster.name}: O KURWA!')
+            if hero.health <= monster_damage:
+                info_message.append('You Die!!!')
+            else:
+                info_message.append(f'{monster.name}: hit ({monster_damage} DMG)')
+                info_message.append(f'{monster.name}: {monster_dialogs[int(randint(0, 3))]}')
+                hero.health = hero.health - monster_damage
+
+    game.game_logs = info
+    game.save()
+    hero.save()
+    monster.save()
+
     return render(request, 'game_app/play.html', {
         'game': game,
-        'info_message': info_message,
-        'hero': hero
+        'hero': hero,
+        'info_message': info_message
     })
