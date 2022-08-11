@@ -1,75 +1,103 @@
+{% load static %}
+<link rel="stylesheet" href="{% static 'css/common.css' %}" />
+
 <div class="play_section">
+	<img class="play__background" src="{% static 'images/office_bg.png' %}" alt="">
+
 	<div class="play_container">
 		<h1 class="play_title">Game name: {{ game.game_name }}</h1>
+
+		<img class="play__hero-image" src="{% static 'images/hero.png' %}" alt="">
+		{% if monster.type == 'monster' %}
+			<img class="play__oleg-image" src="{% static 'images/oleg.png' %}" alt="">
+		{% else %}
+			{% if monster.health <= 0%}
+			<img class="play__oleg-image" src="{% static 'images/igibo_done.png' %}" alt="">
+			{% else %}
+			<img class="play__oleg-image" src="{% static 'images/igibo.png' %}" alt="">
+			{% endif %}
+		{% endif %}
+		<img class="play__skill" src="{% static 'images/fire_ball.png' %}" alt="">
 
 		<div class="play_message-title">Info messages:</div>
 		<div class="play_message-wrapper">
 			{% for message in info_message %}
+			  <br>
 				<p>{{ message }}</p>
 			{% endfor %}
 		</div>
+		<div class="play__enemy-health-wrapper">
+			<h3 class="play__name">{{ monster.name }} HP: {{monster.max_health}}/{{monster.health}}</h3>
+			<div class="play__max-health" data-max-health="{{monster.max_health}}">
+				<div class="play__health" data-health="{{monster.health}}"></div>
+			</div>
+		</div>
 
-		<a href="?damage={{hero.weapon.get.damage}}" class="attack-button">Attack</a>
+		<div class="play__hero-health-wrapper">
+			<h3 class="play__name">{{ hero_name }} HP: {{hero.max_health}}/{{hero.health}}</h3>
+			<div class="play__max-health" data-max-health="{{hero.max_health}}">
+				<div class="play__health" data-health="{{hero.health}}"></div>
+			</div>
+		</div>
+
+		<div class="play__button-wrapper">
+			{% if game.in_progress %}
+				<a href="#" class="attack-button hit">Hit</a>
+				<a href="#" class="attack-button skill">{{hero.skills.name}}</a>
+			{% else %}
+				<a href="{% url 'game_app:index' %}" class="attack-button" >Try again</a>
+			{% endif %}
+		</div>
 	</div>
 </div>
 
-<style>
-	* {
-      margin: 0;
-      padding: 0;
-			box-sizing: border-box;
-			text-decoration: none;
-			list-style: none;
-			font-family: sans-serif;
-	}
-	.play_section {
-      height: 100vh;
-			overflow: hidden;
-	}
-	.play_container {
-      width: 100%;
-			max-width: 900px;
-      margin: 0 auto;
-			padding: 20px 40px;
-      height: 100%;
-	}
-	.play_title {
-		font-size: 24px;
-    color: #555555;
-    margin-bottom: 20px;
-	}
-	.play_message-title {
-      font-size: 20px;
-      font-weight: 500;
-      margin-bottom: 10px;
-			color: #555555;
-	}
-	.play_message-wrapper {
-      background: #555555;
-      width: 100%;
-      height: calc(100% - 300px);
-			overflow-x: hidden;
-			overflow-y: auto;
-			padding: 20px;
-			margin-bottom: 20px;
-	}
-	.play_message-wrapper p {
-			color: #fcfcfc;
-      font-size: 18px;
-      font-weight: 500;
-      margin-bottom: 10px;
-	}
-	.attack-button {
-      height: 50px;
-			width: 100%;
-			background: #ef6c6c;
-			max-width: 150px;
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			border-radius: 10px;
-			color: #722222;
-			font-size: 18px;
-			font-weight: 600;
-	}
-</style>
+<script>
+	const hero_attack = document.querySelector('.attack-button.hit')
+	const hero_skill = document.querySelector('.attack-button.skill')
+	const skill = document.querySelector('.play__skill')
+	const hero = document.querySelector('.play__hero-image')
+	const oleg = document.querySelector('.play__oleg-image')
+	const info_message = document.querySelector('.play_message-wrapper')
+	info_message.scrollTo(0, info_message.scrollHeight)
+
+	const max_health = document.querySelectorAll('.play__max-health')
+	const health = document.querySelectorAll('.play__health')
+	max_health.forEach((item, max_health_index) => {
+  	const max_health_value = item.getAttribute('data-max-health')
+		health.forEach((item, health_index) => {
+    	const health_value = item.getAttribute('data-health')
+				if (max_health_index === health_index) {
+          const hp_value = ((health_value / max_health_value) * 100)
+          item.style.width = `${(hp_value < 0) ? 0 : hp_value }%`
+				}
+		})
+	})
+
+	hero_skill.addEventListener('click', () => {
+		skill.classList.add('skill')
+		oleg.classList.add('get_damage')
+		setTimeout(() => {
+			hero.classList.remove('hit')
+			oleg.classList.remove('get_damage')
+			hero.classList.add('get_damage')
+			oleg.classList.add('hit')
+			setTimeout(() => {
+				window.location.href = '?attack=skill'
+			}, 1000)
+		}, 1000)
+	})
+
+	hero_attack.addEventListener('click', () => {
+		hero.classList.add('hit')
+		oleg.classList.add('get_damage')
+		setTimeout(() => {
+			hero.classList.remove('hit')
+			oleg.classList.remove('get_damage')
+			hero.classList.add('get_damage')
+			oleg.classList.add('hit')
+			setTimeout(() => {
+				window.location.href = '?attack=hit'
+			}, 1000)
+		}, 1000)
+	})
+</script>

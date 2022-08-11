@@ -8,12 +8,7 @@
 </header>
 <form action="" method="post">
 	{% csrf_token %}
-	<fieldset>
-		<legend><h1>Enter Hero name</h1></legend>
-		<label for="name">Name</label>
-		<br>
-		<input type="text" name="name" id="name" value="">
-		{% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
-	</fieldset>
+	{{ create_game_form.as_p }}
 	<input type="submit" value="Create">
 </form>
+<a href="{% url 'game_app:games_list'%}">Games list</a>

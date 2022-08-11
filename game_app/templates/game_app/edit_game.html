@@ -1,0 +1,10 @@
+{% load static %}
+<link rel="stylesheet" href="{% static 'css/common.css' %}" />
+
+<h1>Edit game</h1>
+
+<form action="" method="POST">
+	{% csrf_token %}
+	{{ edit_game_form.as_p }}
+	<input type="submit" value="Edit">
+</form>
