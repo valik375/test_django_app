@@ -11,20 +11,13 @@
     overflow: hidden;
     position: relative;
 }
-.play_container {
-    width: 100%;
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 20px 40px;
-    height: 100%;
-    position: relative;
-}
 .container {
     width: 100%;
     max-width: 900px;
     margin: 0 auto;
     padding: 20px 40px;
     height: 100%;
+    position: relative;
 }
 .play_title {
     font-size: 24px;
@@ -56,7 +49,7 @@
     height: 50px;
     width: 100%;
     background: #ef6c6c;
-    max-width: 300px;
+    max-width: 200px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -264,4 +257,79 @@
 .games-list__edit-button svg, .games-list__delete-button svg {
     width: 16px;
     height: 16px;
+}
+
+
+.shop__header {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+.shop__title {
+    font-size: 26px;
+    color: #555555;
+}
+.shop__hero-money {
+    color: #555;
+    font-size: 20px;
+    font-weight: 600;
+}
+.shop__weapon-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    margin-bottom: 40px;
+}
+.shop__weapon-item {
+    width: calc(50% - 10px);
+    height: 50px;
+    border: 2px solid #3f9712;
+    background: #3f9712;
+    border-radius: 14px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+}
+.shop__weapon-item.disabled {
+    background: #c41717;
+    border-color: #c41717;
+    pointer-events: none;
+    cursor: no-drop;
+}
+.shop__weapon-name {
+    color: #fff;
+    font-size: 20px;
+    font-weight: 600;
+    margin-right: 10px;
+    white-space: nowrap;
+}
+.shop__weapon-damage {
+    width: 100%;
+    font-weight: 500;
+    font-size: 18px;
+    color: #fff;
+}
+.shop__weapon-price {
+    font-size: 18px;
+    font-weight: 500;
+    color: #fff;
+    white-space: nowrap;
+}
+.shop__leave-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-width: 150px;
+    height: 50px;
+    font-size: 20px;
+    font-weight: 600;
+    background: #c41717;
+    color: #fff;
+    border-radius: 10px;
 }

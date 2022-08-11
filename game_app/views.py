@@ -7,7 +7,7 @@ from random import randint
 
 from .decorators import is_owner
 from .forms import RegistrationForm, LoginForm, CreateGameForm, EditGame
-from .models import Game, Weapon, Hero, Monster, Skills
+from .models import Game, Weapon, Hero, Monster, Skills, Shop
 
 
 @login_required(login_url='/game_app/login')
@@ -21,10 +21,16 @@ def index(request):
             game.user_id = request.user.pk
             game.save()
 
+            shop = Shop()
+            shop.game = game
+            shop.save()
+            for weapon in Weapon.objects.all()[:4]:
+                shop.weapon.add(weapon)
+
             hero = Hero()
             hero.game = game
             if not Weapon.objects.first():
-                hero.weapon = Weapon(name='Axe', damage=20)
+                hero.weapon = Weapon(name='Axe', damage=20, price=10)
             else:
                 hero.weapon = Weapon.objects.get(name='Axe')
 
@@ -32,12 +38,13 @@ def index(request):
                 hero.skills = Skills(name='Бред', damage=20)
             else:
                 hero.skills = Skills.objects.get(name='Бред')
-
+            hero.money = 10
             hero.save()
 
             monster = Monster(name='Oleg')
             monster.game = game
             monster.save()
+
             return redirect(f'/game_app/{game.pk}')
     else:
         create_game_form = CreateGameForm()
@@ -58,6 +65,7 @@ def games_list(request):
 
 
 @login_required(login_url='/game_app/login')
+@is_owner
 def delete_game(request, game_id):
     deleted_game = get_object_or_404(Game, pk=game_id)
     deleted_game.delete()
@@ -65,6 +73,7 @@ def delete_game(request, game_id):
 
 
 @login_required(login_url='/game_app/login')
+@is_owner
 def edit_game(request, game_id):
     if request.method == 'POST':
         print(request.POST)
@@ -112,72 +121,107 @@ def user_login(request):
         return render(request, 'game_app/login.html', {'user_login_form': user_login_form})
 
 
+GAME_SETTINGS = {
+    'boss': {
+        'dialogs': ['Не больно', 'Слабак', 'Я неможу слухать цей бред'],
+        'name': 'IGIBO',
+        'type': 'boss',
+        'health_modifier': 0.5,
+        'level': 7,
+    },
+    'monster': {
+        'damage_modifier': 8,
+        'health_modifier': 0.4
+    },
+    'hero': {
+        'attack_type_hit': 'hit',
+        'attack_type_skill': 'skill',
+        'health_modifier': 80,
+        'skill_modifier': 8,
+        'money_modifier': 8,
+    }
+}
+
+
 @login_required(login_url='/game_app/login')
 @is_owner
 def play(request, game_id):
     game = get_object_or_404(Game, pk=game_id)
-    if game.user.pk == request.user.pk:
-        info = game.game_logs
-        info_message = info["info_message"]
-        hero = game.hero.get()
-        monster = game.monster.get()
-        monster_dialogs = ['На тобi КУРВА!', 'Отримуй!', 'Джета топ!', 'Получай!']
+    info = game.game_logs
+    info_message = info["info_message"]
+    hero = game.hero.get()
+    monster = game.monster.get()
 
-        def fight(hero_damage, attack_name):
-            monster_damage = monster.level * 10
-            info_message.append(f'{request.user}: hit by {attack_name} ({hero_damage} DMG)')
-            monster.health = monster.health - hero_damage
-            if monster.health <= 0 and monster.type == 'boss':
-                info_message.append('You Won!!!')
-                game.in_progress = False
-            elif monster.health <= 0:
-                if monster.level >= 5:
-                    monster.level = 10
-                    monster.health = 200
-                    monster.max_health = 200
-                    monster.type = 'boss'
-                    monster.name = 'IGIBO'
-                else:
-                    hero.level = hero.level + 1
-                    hero.health = 100 * hero.level
-                    hero.max_health = 100 * hero.level
-                    monster.level = monster.level + 1
-                    monster.health = 50 * monster.level
-                    monster.max_health = 50 * monster.level
+    def fight(hero_damage, attack_name):
+        monster_damage = monster.level * GAME_SETTINGS['monster']['damage_modifier']
+        info_message.append(f'{request.user}: hit by {attack_name} ({hero_damage} DMG)')
+        monster.health = monster.health - hero_damage
+        if monster.health <= 0 and monster.type == GAME_SETTINGS['boss']['type']:
+            info_message.append('You Won!!!')
+            game.in_progress = False
+        elif monster.health <= 0:
+            if monster.level >= 5:
+                monster.level = GAME_SETTINGS['boss']['level']
+                monster.max_health = GAME_SETTINGS['boss']['level'] * 100 * GAME_SETTINGS['boss']['health_modifier']
+                monster.health = monster.max_health
+                monster.type = GAME_SETTINGS['boss']['type']
+                monster.name = GAME_SETTINGS['boss']['name']
             else:
-                info_message.append(f'{monster.name}: O KURWA!')
-                if hero.health <= monster_damage:
-                    info_message.append('You Die!!!')
-                    game.in_progress = False
-                else:
-                    if monster.type == 'monster':
-                        info_message.append(f'{monster.name}: hit ({monster_damage} DMG)')
-                        info_message.append(f'{monster.name}: {monster_dialogs[int(randint(0, 3))]}')
-                    else:
-                        boss_dialogs = ['Не больно', 'Слабак', 'Я неможу слухать цей бред']
-                        info_message.append(f'{monster.name}: {boss_dialogs[int(randint(0, 3))]}')
-                    hero.health = hero.health - monster_damage
-
-        if hero.weapon.damage and (request.GET.get('attack') == 'hit'):
-            weapon_damage = hero.weapon.damage
-            weapon_name = hero.weapon.name
-            fight(hero_damage=weapon_damage, attack_name=weapon_name)
+                hero.level = hero.level + 1
+                hero.max_health = GAME_SETTINGS['hero']['health_modifier'] * hero.level
+                hero.health = hero.max_health
+                hero.money = hero.money + (GAME_SETTINGS['hero']['money_modifier'] * monster.level)
+                monster.level = monster.level + 1
+                monster.max_health = 50 * monster.level * GAME_SETTINGS['monster']['health_modifier']
+                monster.health = monster.max_health
         else:
-            skill_damage = hero.skills.damage * hero.level * 0.8 * 10
-            skill_name = hero.skills.name
-            fight(hero_damage=skill_damage, attack_name=skill_name)
+            if hero.health <= monster_damage:
+                info_message.append('You Die!!!')
+                game.in_progress = False
+            else:
+                info_message.append(f'{monster.name}: {GAME_SETTINGS["boss"]["dialogs"][int(randint(0, 3))]}')
+                hero.health = hero.health - monster_damage
 
-        game.game_logs = info
-        game.save()
-        hero.save()
-        monster.save()
-
-        return render(request, 'game_app/play.html', {
-            'game': game,
-            'hero': hero,
-            'monster': monster,
-            'hero_name': request.user,
-            'info_message': info_message
-        })
+    if hero.weapon.damage and (request.GET.get('attack') == GAME_SETTINGS['hero']['attack_type_hit']):
+        weapon_damage = hero.weapon.damage
+        weapon_name = hero.weapon.name
+        fight(hero_damage=weapon_damage, attack_name=weapon_name)
     else:
-        return redirect(f'/game_app')
+        skill_damage = hero.skills.damage * hero.level * GAME_SETTINGS['hero']['skill_modifier']
+        skill_name = hero.skills.name
+        fight(hero_damage=skill_damage, attack_name=skill_name)
+
+    game.game_logs = info
+    game.save()
+    hero.save()
+    monster.save()
+
+    return render(request, 'game_app/play.html', {
+        'game': game,
+        'hero': hero,
+        'monster': monster,
+        'hero_name': request.user,
+        'info_message': info_message
+    })
+
+
+@login_required(login_url='/game_app/login')
+@is_owner
+def shop_page(request, game_id):
+    game = get_object_or_404(Game, pk=game_id)
+    hero = game.hero.get()
+    shop = game.shop.get()
+
+    if request.GET.get('leave') == 'true':
+        return redirect(f'/game_app/{game_id}')
+
+    for weapon in shop.weapon.all():
+        if str(weapon.pk) == request.GET.get('weapon_id') and hero.money >= weapon.price:
+            hero.weapon = weapon
+            hero.money = hero.money - weapon.price
+            hero.save()
+
+    return render(request, 'game_app/shop.html', {
+        'shop': shop,
+        'hero': hero,
+    })

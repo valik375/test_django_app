@@ -1,0 +1,24 @@
+{% load static %}
+<link rel="stylesheet" href="{% static 'css/common.css' %}" />
+
+<div class="shop">
+	<div class="shop__container container">
+		<div class="shop__header">
+			<h1 class="shop__title">Shop</h1>
+			<div class="shop__hero-money">Your Money: ${{ hero.money }}</div>
+		</div>
+		<div class="shop__weapon-wrapper">
+			{% for weapon in shop.weapon.all %}
+			<a href="?weapon_id={{forloop.counter}}" class="shop__weapon-item {% if not hero.money >= weapon.price %} disabled {% endif %}">
+				<span class="shop__weapon-name">{{weapon.name}}</span>
+				<span class="shop__weapon-damage">DMG: {{weapon.damage}}</span>
+				<span class="shop__weapon-price">${{weapon.price}}</span>
+			</a>
+			{% endfor %}
+		</div>
+		{% if shop_message %}
+		  {{ shop_message }}
+		{% endif %}
+		<a href="?leave=true" class="shop__leave-button">Leave</a>
+	</div>
+</div>

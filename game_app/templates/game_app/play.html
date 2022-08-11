@@ -4,7 +4,7 @@
 <div class="play_section">
 	<img class="play__background" src="{% static 'images/office_bg.png' %}" alt="">
 
-	<div class="play_container">
+	<div class="play__container container">
 		<h1 class="play_title">Game name: {{ game.game_name }}</h1>
 
 		<img class="play__hero-image" src="{% static 'images/hero.png' %}" alt="">
@@ -44,6 +44,7 @@
 			{% if game.in_progress %}
 				<a href="#" class="attack-button hit">Hit</a>
 				<a href="#" class="attack-button skill">{{hero.skills.name}}</a>
+				<a href="{% url 'game_app:shop' game_id=game.pk%}" class="attack-button">Shop</a>
 			{% else %}
 				<a href="{% url 'game_app:index' %}" class="attack-button" >Try again</a>
 			{% endif %}
