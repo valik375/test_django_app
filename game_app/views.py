@@ -76,7 +76,6 @@ def delete_game(request, game_id):
 @is_owner
 def edit_game(request, game_id):
     if request.method == 'POST':
-        print(request.POST)
         edited_game = get_object_or_404(Game, pk=game_id)
         edit_game_form = EditGame(request.POST)
         if edit_game_form.is_valid():
